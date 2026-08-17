@@ -3,3 +3,27 @@ node_modules
 .env
 
 /generated/prisma
+
+
+# Python virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / build output
+node_modules/
+dist/
+
