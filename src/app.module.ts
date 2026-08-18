@@ -5,9 +5,17 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { AssessmentsModule } from './modules/assessments/assessments.module';
+import { QuestionsModule } from './modules/questions/questions.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    UsersModule,
+    AssessmentsModule,
+    QuestionsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
