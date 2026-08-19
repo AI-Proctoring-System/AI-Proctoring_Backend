@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, IsNumber, Min } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsNumber, Min, IsArray } from 'class-validator';
 
 export class CreateAssessmentDto {
   @ApiProperty({ example: 'Midterm Exam' })
@@ -29,4 +29,16 @@ export class CreateAssessmentDto {
   @IsNumber()
   @Min(0)
   passingScore!: number;
+
+  @ApiPropertyOptional({ example: ['scientific calculator', 'blank paper'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowedMaterials?: string[];
+
+  @ApiPropertyOptional({ example: ['phone', 'smartwatch', 'headphones'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  prohibitedMaterials?: string[];
 }
