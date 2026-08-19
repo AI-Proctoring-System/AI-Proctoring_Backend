@@ -7,6 +7,9 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { AssessmentsModule } from './modules/assessments/assessments.module';
 import { QuestionsModule } from './modules/questions/questions.module';
+import { InvitationsModule } from './modules/invitations/invitations.module';
+import { AttemptsModule } from './modules/attempts/attempts.module';
+import { VerificationModule } from './modules/verification/verification.module';
 
 @Module({
   imports: [
@@ -15,6 +18,9 @@ import { QuestionsModule } from './modules/questions/questions.module';
     UsersModule,
     AssessmentsModule,
     QuestionsModule,
+    InvitationsModule,
+    AttemptsModule,
+    VerificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
