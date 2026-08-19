@@ -21,6 +21,13 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
 
+    const existingCompany = await this.prisma.company.findFirst({
+      where: { name: registerDto.companyName },
+    });
+    if (existingCompany) {
+      throw new ConflictException('A company with this name already exists');
+    }
+
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(registerDto.password, salt);
 
