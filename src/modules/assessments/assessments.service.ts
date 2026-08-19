@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateRulesDto } from './dto/update-rules.dto';
@@ -17,6 +17,17 @@ export class AssessmentsService {
 
     if (!company) {
       throw new NotFoundException('Company profile not found for user');
+    }
+
+    const existingAssessment = await this.prisma.assessment.findFirst({
+      where: {
+        companyId: company.id,
+        title: dto.title,
+      },
+    });
+
+    if (existingAssessment) {
+      throw new ConflictException('An assessment with this title already exists');
     }
 
     return this.prisma.assessment.create({

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
@@ -22,6 +22,22 @@ export class QuestionsService {
 
     if (assessment.company.userId !== userId) {
       throw new ForbiddenException('You do not have access to modify this assessment');
+    }
+
+    if (dto.questionType === 'MCQ') {
+      if (!dto.options || dto.options.length === 0) {
+        throw new BadRequestException('MCQ questions must have options.');
+      }
+      
+      const correctCount = dto.options.filter(o => o.isCorrect).length;
+      if (correctCount !== 1) {
+        throw new BadRequestException('MCQ questions must have exactly one correct option.');
+      }
+
+      const labels = dto.options.map(o => o.optionLabel);
+      if (new Set(labels).size !== labels.length) {
+        throw new BadRequestException('Option labels must be unique within a question.');
+      }
     }
 
     return this.prisma.question.create({
@@ -57,6 +73,24 @@ export class QuestionsService {
     }
 
     const createdQuestions = [];
+
+    for (const q of dto.questions) {
+      if (q.questionType === 'MCQ') {
+        if (!q.options || q.options.length === 0) {
+          throw new BadRequestException('MCQ questions must have options.');
+        }
+        
+        const correctCount = q.options.filter(o => o.isCorrect).length;
+        if (correctCount !== 1) {
+          throw new BadRequestException('MCQ questions must have exactly one correct option.');
+        }
+
+        const labels = q.options.map(o => o.optionLabel);
+        if (new Set(labels).size !== labels.length) {
+          throw new BadRequestException('Option labels must be unique within a question.');
+        }
+      }
+    }
 
     // Using a simple loop instead of createMany because createMany doesn't support nested relations (options) in Prisma.
     // If performance is an issue, a raw transaction or $transaction with multiple creates can be used.
