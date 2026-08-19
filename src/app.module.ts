@@ -10,6 +10,7 @@ import { QuestionsModule } from './modules/questions/questions.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { AttemptsModule } from './modules/attempts/attempts.module';
 import { VerificationModule } from './modules/verification/verification.module';
+import { TelemetryModule } from './modules/telemetry/telemetry.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { VerificationModule } from './modules/verification/verification.module';
     InvitationsModule,
     AttemptsModule,
     VerificationModule,
+    TelemetryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
