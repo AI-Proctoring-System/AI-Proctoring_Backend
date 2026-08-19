@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@n
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
+import { BulkCreateQuestionsDto } from './dto/bulk-create-questions.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -25,6 +26,16 @@ export class QuestionsController {
     @Body() createQuestionDto: CreateQuestionDto,
   ) {
     return this.questionsService.create(user.sub, assessmentId, createQuestionDto);
+  }
+
+  @Post('bulk')
+  @ApiOperation({ summary: 'Bulk upload questions via CSV parsing' })
+  createBulk(
+    @CurrentUser() user: any,
+    @Param('assessmentId') assessmentId: string,
+    @Body() bulkCreateQuestionsDto: BulkCreateQuestionsDto,
+  ) {
+    return this.questionsService.createBulk(user.sub, assessmentId, bulkCreateQuestionsDto);
   }
 
   @Get()
