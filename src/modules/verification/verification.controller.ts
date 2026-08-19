@@ -1,5 +1,6 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { VerificationService } from './verification.service';
+import { SubmitRoomVerificationDto } from './dto/submit-room-verification.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -22,5 +23,24 @@ export class VerificationController {
     @Param('attemptId') attemptId: string,
   ) {
     return this.verificationService.getVerificationStatus(user.candidateId, attemptId);
+  }
+
+  @Get(':attemptId/room/status')
+  @ApiOperation({ summary: 'Poll the room environment verification status' })
+  getRoomStatus(
+    @CurrentUser() user: any,
+    @Param('attemptId') attemptId: string,
+  ) {
+    return this.verificationService.getRoomVerificationStatus(user.candidateId, attemptId);
+  }
+
+  @Post(':attemptId/room')
+  @ApiOperation({ summary: 'Submit or update room verification checklist status' })
+  submitRoomVerification(
+    @CurrentUser() user: any,
+    @Param('attemptId') attemptId: string,
+    @Body() dto: SubmitRoomVerificationDto,
+  ) {
+    return this.verificationService.submitRoomVerification(user.candidateId, attemptId, dto);
   }
 }
