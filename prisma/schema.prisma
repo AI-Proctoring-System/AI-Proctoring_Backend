@@ -185,6 +185,9 @@ model Assessment {
   maxTabSwitches      Int      @default(5)
   autoSubmitOnTimeout Boolean  @default(true)
 
+  allowedMaterials    String[] @default([])
+  prohibitedMaterials String[] @default([])
+
   // Proctoring switches
   identityVerificationEnabled Boolean @default(true)
   personDetectionEnabled      Boolean @default(true)
