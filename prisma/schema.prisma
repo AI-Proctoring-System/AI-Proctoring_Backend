@@ -347,6 +347,7 @@ model ExamAttempt {
 
   answers             CandidateAnswer[]
   identityVerification IdentityVerification?
+  roomVerification    RoomVerification?
   proctoringEvents    ProctoringEvent[]
   riskScore           RiskScore?
 
@@ -426,6 +427,30 @@ model IdentityVerification {
   attempt             ExamAttempt        @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 
   @@index([candidateId])
+  @@index([status])
+}
+
+// ============================================================
+// ROOM VERIFICATION
+// Used before the exam to verify environment.
+// ============================================================
+
+model RoomVerification {
+  id                  String             @id @default(cuid())
+
+  attemptId           String             @unique
+  status              VerificationStatus @default(PENDING)
+
+  fullRoomScanPassed  Boolean?
+  deskScanPassed      Boolean?
+  prohibitedItemsDetected Boolean?
+
+  verifiedAt          DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  attempt             ExamAttempt        @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
   @@index([status])
 }
 
