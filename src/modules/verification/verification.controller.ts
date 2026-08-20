@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { VerificationService } from './verification.service';
 import { SubmitRoomVerificationDto } from './dto/submit-room-verification.dto';
+import { SubmitIdentityVerificationDto } from './dto/submit-identity-verification.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -42,5 +43,15 @@ export class VerificationController {
     @Body() dto: SubmitRoomVerificationDto,
   ) {
     return this.verificationService.submitRoomVerification(user.candidateId, attemptId, dto);
+  }
+
+  @Post(':attemptId/identity')
+  @ApiOperation({ summary: 'Submit identity verification results (Face Match & Liveness)' })
+  submitIdentityVerification(
+    @CurrentUser() user: any,
+    @Param('attemptId') attemptId: string,
+    @Body() dto: SubmitIdentityVerificationDto,
+  ) {
+    return this.verificationService.submitIdentityVerification(user.candidateId, attemptId, dto);
   }
 }

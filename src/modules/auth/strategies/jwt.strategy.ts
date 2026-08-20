@@ -23,6 +23,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    return user;
+    // Merge payload properties so controllers can access user.sub and user.candidateId
+    return {
+      ...user,
+      sub: payload.sub,
+      candidateId: (payload as any).candidateId,
+    };
   }
 }
