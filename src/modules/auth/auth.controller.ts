@@ -25,4 +25,14 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'User successfully logged out' })
+  async logout() {
+    return {
+      message: 'Logged out successfully. Please remove the JWT token from your client storage.',
+    };
+  }
 }
