@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { TelemetryService } from './telemetry.service';
 import { LogBrowserEventDto } from './dto/log-browser-event.dto';
+import { LogAiEventDto } from './dto/log-ai-event.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -24,5 +25,15 @@ export class TelemetryController {
     @Body() dto: LogBrowserEventDto,
   ) {
     return this.telemetryService.logBrowserEvent(user.candidateId, attemptId, dto);
+  }
+
+  @Post(':attemptId/ai')
+  @ApiOperation({ summary: 'Log an AI vision/audio telemetry event (e.g. Head turn, Speech detected)' })
+  logAiEvent(
+    @CurrentUser() user: any,
+    @Param('attemptId') attemptId: string,
+    @Body() dto: LogAiEventDto,
+  ) {
+    return this.telemetryService.logAiEvent(user.candidateId, attemptId, dto);
   }
 }
