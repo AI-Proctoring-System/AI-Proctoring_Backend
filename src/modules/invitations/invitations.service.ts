@@ -11,7 +11,9 @@ export class InvitationsService {
   private readonly logger = new Logger(InvitationsService.name);
   private transporter: nodemailer.Transporter;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'localhost',
       port: parseInt(process.env.SMTP_PORT || '587', 10),
@@ -72,6 +74,8 @@ export class InvitationsService {
           data: {
             userId: user.id,
             phone: candidateData.phone,
+            // Assuming existing users without candidate profiles don't need avatars instantly
+            // They can upload it themselves, but for consistency we could do it here too
           },
         });
         user = await this.prisma.user.findUniqueOrThrow({
