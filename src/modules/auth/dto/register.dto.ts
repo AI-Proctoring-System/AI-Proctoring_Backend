@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, MaxLength } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
@@ -27,4 +27,9 @@ export class RegisterDto {
   @IsString()
   @MaxLength(100, { message: 'Company name cannot exceed 100 characters' })
   companyName!: string;
+
+  @ApiProperty({ example: 'data:image/png;base64,...', required: false })
+  @IsString()
+  @IsOptional()
+  logoDataUrl?: string;
 }

@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
 import { UserRole } from '@prisma/client';
 
 @Injectable()
@@ -41,6 +42,7 @@ export class AuthService {
         company: {
           create: {
             name: registerDto.companyName,
+            logoUrl: registerDto.logoDataUrl || null,
           },
         },
       },
@@ -73,6 +75,47 @@ export class AuthService {
     }
     return {
       accessToken: this.jwtService.sign(payload),
+    };
+  }
+
+  async updateCompanyProfile(userId: string, dto: UpdateCompanyProfileDto) {
+    // 1. Prepare updates for the User model
+    const userUpdates: any = {};
+    if (dto.firstName !== undefined) userUpdates.firstName = dto.firstName;
+    if (dto.lastName !== undefined) userUpdates.lastName = dto.lastName;
+
+    // 2. Prepare updates for the Company model
+    const companyUpdates: any = {};
+    if (dto.companyName !== undefined) companyUpdates.name = dto.companyName;
+    if (dto.companyEmail !== undefined) companyUpdates.email = dto.companyEmail;
+    if (dto.websiteUrl !== undefined) companyUpdates.websiteUrl = dto.websiteUrl;
+    if (dto.description !== undefined) companyUpdates.description = dto.description;
+    if (dto.logoDataUrl !== undefined) companyUpdates.logoUrl = dto.logoDataUrl;
+
+    // 3. Update in Database
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...userUpdates,
+        company: Object.keys(companyUpdates).length > 0 ? {
+          update: companyUpdates
+        } : undefined,
+      },
+      include: {
+        company: true,
+      },
+    });
+
+    return {
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        role: updatedUser.role,
+        company: updatedUser.company,
+      }
     };
   }
 }
