@@ -27,6 +27,7 @@ model Company {
   userId      String       @unique
   name        String
   email       String?
+  logoUrl     String?
   websiteUrl  String?
   description String?
   createdAt   DateTime     @default(now())
