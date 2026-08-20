@@ -6,12 +6,267 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         UserRole
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  candidate    Candidate?
+  company      Company?
 
-// ============================================================
-// ENUMS
-// These are system-controlled values.
-// Companies do NOT define these from the UI.
-// ============================================================
+  @@index([email])
+}
+
+model Company {
+  id          String       @id @default(cuid())
+  userId      String       @unique
+  name        String
+  email       String?
+  websiteUrl  String?
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assessments Assessment[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([name])
+}
+
+model Candidate {
+  id             String                 @id @default(cuid())
+  userId         String                 @unique
+  phone          String?
+  profileImage   String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  invitations    AssessmentInvitation[]
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts       ExamAttempt[]
+  identityChecks IdentityVerification[]
+}
+
+model Assessment {
+  id                          String                 @id @default(cuid())
+  companyId                   String
+  title                       String
+  description                 String?
+  assessmentType              String
+  instructions                String?
+  status                      AssessmentStatus       @default(DRAFT)
+  examDate                    DateTime
+  startTime                   DateTime
+  endTime                     DateTime
+  durationMinutes             Int
+  passingScore                Float
+  maxTabSwitches              Int                    @default(5)
+  autoSubmitOnTimeout         Boolean                @default(true)
+  identityVerificationEnabled Boolean                @default(true)
+  personDetectionEnabled      Boolean                @default(true)
+  objectDetectionEnabled      Boolean                @default(true)
+  headGazeMonitoringEnabled   Boolean                @default(true)
+  voiceMonitoringEnabled      Boolean                @default(false)
+  browserMonitoringEnabled    Boolean                @default(true)
+  fullscreenMonitoringEnabled Boolean                @default(true)
+  copyPasteMonitoringEnabled  Boolean                @default(false)
+  headMovementThreshold       Int                    @default(5)
+  voiceThresholdSeconds       Int                    @default(5)
+  objectDetectionDurationSec  Float                  @default(3)
+  personDetectionDurationSec  Float                  @default(2)
+  createdAt                   DateTime               @default(now())
+  updatedAt                   DateTime               @updatedAt
+  allowedMaterials            String[]               @default([])
+  prohibitedMaterials         String[]               @default([])
+  company                     Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invitations                 AssessmentInvitation[]
+  attempts                    ExamAttempt[]
+  questions                   Question[]
+
+  @@index([companyId])
+  @@index([assessmentType])
+  @@index([status])
+  @@index([examDate])
+}
+
+model Question {
+  id           String            @id @default(cuid())
+  assessmentId String
+  questionType String
+  questionText String
+  marks        Float             @default(1)
+  orderNumber  Int
+  status       QuestionStatus    @default(ACTIVE)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  options      AnswerOption[]
+  answers      CandidateAnswer[]
+  assessment   Assessment        @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+  @@index([questionType])
+}
+
+model AnswerOption {
+  id               String            @id @default(cuid())
+  questionId       String
+  optionText       String
+  optionLabel      String
+  isCorrect        Boolean           @default(false)
+  orderNumber      Int
+  createdAt        DateTime          @default(now())
+  question         Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  candidateAnswers CandidateAnswer[]
+
+  @@index([questionId])
+}
+
+model AssessmentInvitation {
+  id              String           @id @default(cuid())
+  assessmentId    String
+  candidateId     String
+  email           String
+  invitationToken String           @unique
+  status          InvitationStatus @default(INVITED)
+  invitedAt       DateTime         @default(now())
+  activatedAt     DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  assessment      Assessment       @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  candidate       Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, candidateId])
+  @@index([candidateId])
+  @@index([assessmentId])
+  @@index([invitationToken])
+}
+
+model ExamAttempt {
+  id                   String                @id @default(cuid())
+  assessmentId         String
+  candidateId          String
+  status               AttemptStatus         @default(NOT_STARTED)
+  startedAt            DateTime?
+  submittedAt          DateTime?
+  score                Float?
+  totalMarks           Float?
+  percentage           Float?
+  passed               Boolean?
+  tabSwitchCount       Int                   @default(0)
+  reviewDecision       ReviewDecision        @default(PENDING)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  answers              CandidateAnswer[]
+  assessment           Assessment            @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  candidate            Candidate             @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  identityVerification IdentityVerification?
+  proctoringEvents     ProctoringEvent[]
+  riskScore            RiskScore?
+  roomVerification     RoomVerification?
+
+  @@unique([assessmentId, candidateId])
+  @@index([candidateId])
+  @@index([assessmentId])
+  @@index([status])
+}
+
+model CandidateAnswer {
+  id               String        @id @default(cuid())
+  attemptId        String
+  questionId       String
+  selectedOptionId String?
+  textAnswer       String?
+  codeAnswer       String?
+  status           AnswerStatus  @default(UNANSWERED)
+  marksObtained    Float?
+  answeredAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  attempt          ExamAttempt   @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question         Question      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption   AnswerOption? @relation(fields: [selectedOptionId], references: [id])
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([questionId])
+}
+
+model IdentityVerification {
+  id                   String             @id @default(cuid())
+  candidateId          String
+  attemptId            String             @unique
+  status               VerificationStatus @default(PENDING)
+  similarityScore      Float?
+  faceMatchConfidence  Float?
+  livenessPassed       Boolean?
+  verificationAttempts Int                @default(0)
+  verifiedAt           DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  attempt              ExamAttempt        @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  candidate            Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@index([status])
+}
+
+model RoomVerification {
+  id                      String             @id @default(cuid())
+  attemptId               String             @unique
+  status                  VerificationStatus @default(PENDING)
+  fullRoomScanPassed      Boolean?
+  deskScanPassed          Boolean?
+  prohibitedItemsDetected Boolean?
+  verifiedAt              DateTime?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  attempt                 ExamAttempt        @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model ProctoringEvent {
+  id              String                  @id @default(cuid())
+  attemptId       String
+  source          String
+  eventType       String
+  severity        ProctoringEventSeverity @default(LOW)
+  confidence      Float?
+  durationSeconds Float?
+  timestamp       DateTime                @default(now())
+  description     String?
+  evidenceType    EvidenceType?
+  evidenceUrl     String?
+  scored          Boolean                 @default(false)
+  pointsAwarded   Float                   @default(0)
+  attempt         ExamAttempt             @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([eventType])
+  @@index([severity])
+  @@index([timestamp])
+}
+
+model RiskScore {
+  id               String      @id @default(cuid())
+  attemptId        String      @unique
+  rawScore         Float
+  normalizedScore  Float
+  riskLevel        RiskLevel
+  flaggedForReview Boolean     @default(false)
+  totalEvents      Int         @default(0)
+  lowEvents        Int         @default(0)
+  mediumEvents     Int         @default(0)
+  highEvents       Int         @default(0)
+  criticalEvents   Int         @default(0)
+  calculatedAt     DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  attempt          ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
 
 enum UserRole {
   ADMIN
@@ -81,467 +336,4 @@ enum ReviewDecision {
   PASS
   FAIL
   REVIEW
-}
-
-
-// ============================================================
-// USER
-// ============================================================
-
-model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  passwordHash  String
-  firstName     String
-  lastName      String
-  role          UserRole
-  isActive      Boolean  @default(true)
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  company       Company?
-  candidate     Candidate?
-
-  @@index([email])
-}
-
-
-// ============================================================
-// COMPANY
-// ============================================================
-
-model Company {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-
-  name          String
-  email         String?
-  websiteUrl    String?
-  description   String?
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assessments   Assessment[]
-
-  @@index([name])
-}
-
-
-// ============================================================
-// CANDIDATE
-// ============================================================
-
-model Candidate {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-
-  phone         String?
-  profileImage  String?
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invitations       AssessmentInvitation[]
-  attempts          ExamAttempt[]
-  identityChecks    IdentityVerification[]
-}
-
-
-// ============================================================
-// ASSESSMENT
-// ============================================================
-
-model Assessment {
-  id                  String           @id @default(cuid())
-  companyId           String
-
-  title               String
-  description         String?
-
-  // Company-defined value.
-  // Examples:
-  // "Software Engineer"
-  // "Frontend Developer"
-  // "AI Engineer"
-  // "General Aptitude"
-  assessmentType      String
-
-  instructions        String?
-
-  status              AssessmentStatus @default(DRAFT)
-
-  examDate            DateTime
-  startTime           DateTime
-  endTime             DateTime
-
-  durationMinutes     Int
-  passingScore        Float
-
-  // General exam configuration
-  maxTabSwitches      Int      @default(5)
-  autoSubmitOnTimeout Boolean  @default(true)
-
-  allowedMaterials    String[] @default([])
-  prohibitedMaterials String[] @default([])
-
-  // Proctoring switches
-  identityVerificationEnabled Boolean @default(true)
-  personDetectionEnabled      Boolean @default(true)
-  objectDetectionEnabled      Boolean @default(true)
-  headGazeMonitoringEnabled   Boolean @default(true)
-  voiceMonitoringEnabled      Boolean @default(false)
-  browserMonitoringEnabled    Boolean @default(true)
-  fullscreenMonitoringEnabled Boolean @default(true)
-  copyPasteMonitoringEnabled  Boolean @default(false)
-
-  // Behaviour thresholds
-  headMovementThreshold        Int   @default(5)
-  voiceThresholdSeconds        Int   @default(5)
-  objectDetectionDurationSec   Float @default(3)
-  personDetectionDurationSec   Float @default(2)
-
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  company             Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  questions           Question[]
-  invitations         AssessmentInvitation[]
-  attempts            ExamAttempt[]
-
-  @@index([companyId])
-  @@index([assessmentType])
-  @@index([status])
-  @@index([examDate])
-}
-
-
-// ============================================================
-// QUESTION
-// ============================================================
-
-model Question {
-  id              String         @id @default(cuid())
-  assessmentId    String
-
-  // Company-defined value.
-  // Examples:
-  // "MCQ"
-  // "Coding"
-  // "Short Answer"
-  // "Long Answer"
-  // "Essay"
-  questionType    String
-
-  questionText   String
-  marks          Float          @default(1)
-  orderNumber    Int
-
-  status         QuestionStatus @default(ACTIVE)
-
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-
-  assessment     Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  options        AnswerOption[]
-  answers        CandidateAnswer[]
-
-  @@index([assessmentId])
-  @@index([questionType])
-}
-
-
-// ============================================================
-// ANSWER OPTIONS
-// Used mainly for MCQ.
-// Coding / subjective questions can simply have no options.
-// ============================================================
-
-model AnswerOption {
-  id              String   @id @default(cuid())
-  questionId      String
-
-  optionText      String
-  optionLabel     String
-  isCorrect       Boolean  @default(false)
-  orderNumber     Int
-  candidateAnswers CandidateAnswer[]
-
-  createdAt       DateTime @default(now())
-
-  question        Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  @@index([questionId])
-}
-
-
-// ============================================================
-// ASSESSMENT INVITATION
-// One assessment can be sent to many candidates.
-// One candidate can receive many assessment invitations.
-// ============================================================
-
-model AssessmentInvitation {
-  id              String           @id @default(cuid())
-
-  assessmentId    String
-  candidateId     String
-
-  email           String
-
-  invitationToken String           @unique
-
-  status          InvitationStatus @default(INVITED)
-
-  invitedAt       DateTime         @default(now())
-  activatedAt     DateTime?
-  expiresAt       DateTime?
-
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-
-  assessment      Assessment       @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  candidate       Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  @@unique([assessmentId, candidateId])
-  @@index([candidateId])
-  @@index([assessmentId])
-  @@index([invitationToken])
-}
-
-
-// ============================================================
-// EXAM ATTEMPT
-// Represents one candidate actually taking an assessment.
-// ============================================================
-
-model ExamAttempt {
-  id                  String        @id @default(cuid())
-
-  assessmentId        String
-  candidateId         String
-
-  status              AttemptStatus @default(NOT_STARTED)
-
-  startedAt           DateTime?
-  submittedAt         DateTime?
-
-  score               Float?
-  totalMarks          Float?
-  percentage          Float?
-
-  passed              Boolean?
-
-  tabSwitchCount      Int           @default(0)
-
-  reviewDecision      ReviewDecision @default(PENDING)
-
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-
-  assessment          Assessment    @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  candidate           Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  answers             CandidateAnswer[]
-  identityVerification IdentityVerification?
-  roomVerification    RoomVerification?
-  proctoringEvents    ProctoringEvent[]
-  riskScore           RiskScore?
-
-  @@unique([assessmentId, candidateId])
-  @@index([candidateId])
-  @@index([assessmentId])
-  @@index([status])
-}
-
-
-// ============================================================
-// CANDIDATE ANSWERS
-// Stores the candidate's answer for every question.
-// ============================================================
-
-model CandidateAnswer {
-  id              String       @id @default(cuid())
-
-  attemptId       String
-  questionId      String
-
-  // For MCQ
-  selectedOptionId String?
-
-  // For coding / subjective / essay
-  textAnswer      String?
-
-  // Can later store code separately if required.
-  codeAnswer      String?
-
-  status          AnswerStatus @default(UNANSWERED)
-
-  marksObtained   Float?
-
-  answeredAt      DateTime?
-
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-
-  attempt         ExamAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question        Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  selectedOption  AnswerOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
-
-  @@unique([attemptId, questionId])
-  @@index([attemptId])
-  @@index([questionId])
-}
-
-
-// ============================================================
-// IDENTITY VERIFICATION
-// Used before the exam and potentially for periodic verification.
-// ============================================================
-
-model IdentityVerification {
-  id                  String             @id @default(cuid())
-
-  candidateId         String
-  attemptId           String             @unique
-
-  status              VerificationStatus @default(PENDING)
-
-  // Face matching result
-  similarityScore     Float?
-  faceMatchConfidence Float?
-
-  // Liveness/presence result
-  livenessPassed      Boolean?
-
-  verificationAttempts Int @default(0)
-
-  verifiedAt          DateTime?
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-
-  candidate           Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  attempt             ExamAttempt        @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-
-  @@index([candidateId])
-  @@index([status])
-}
-
-// ============================================================
-// ROOM VERIFICATION
-// Used before the exam to verify environment.
-// ============================================================
-
-model RoomVerification {
-  id                  String             @id @default(cuid())
-
-  attemptId           String             @unique
-  status              VerificationStatus @default(PENDING)
-
-  fullRoomScanPassed  Boolean?
-  deskScanPassed      Boolean?
-  prohibitedItemsDetected Boolean?
-
-  verifiedAt          DateTime?
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-
-  attempt             ExamAttempt        @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-
-  @@index([status])
-}
-
-
-// ============================================================
-// PROCTORING EVENTS
-//
-// Every AI/browser/system detection is converted into a common
-// event before entering this table.
-//
-// Examples:
-// "PHONE_DETECTED"
-// "MULTIPLE_PERSONS"
-// "LOOKING_AWAY"
-// "TAB_SWITCH"
-// "IDENTITY_MISMATCH"
-// "VOICE_DETECTED"
-// ============================================================
-
-model ProctoringEvent {
-  id              String                  @id @default(cuid())
-
-  attemptId       String
-
-  // Source of event.
-  // Examples:
-  // "YOLO"
-  // "MediaPipe"
-  // "Browser"
-  // "FaceVerification"
-  // "VAD"
-  source          String
-
-  // Dynamic event name.
-  eventType       String
-
-  severity        ProctoringEventSeverity @default(LOW)
-
-  confidence      Float?
-
-  durationSeconds Float?
-
-  timestamp       DateTime                @default(now())
-
-  description     String?
-
-  // Evidence
-  evidenceType    EvidenceType?
-  evidenceUrl     String?
-
-  // Whether the event contributed to risk scoring
-  scored          Boolean                 @default(false)
-
-  pointsAwarded   Float                   @default(0)
-
-  attempt         ExamAttempt             @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-
-  @@index([attemptId])
-  @@index([eventType])
-  @@index([severity])
-  @@index([timestamp])
-}
-
-
-// ============================================================
-// RISK SCORE
-//
-// Final result generated by the rule-based risk engine.
-// AI models do NOT directly decide PASS/FAIL.
-// ============================================================
-
-model RiskScore {
-  id                  String     @id @default(cuid())
-
-  attemptId           String     @unique
-
-  rawScore            Float
-  normalizedScore     Float
-
-  riskLevel           RiskLevel
-
-  flaggedForReview    Boolean    @default(false)
-
-  totalEvents         Int        @default(0)
-  lowEvents           Int        @default(0)
-  mediumEvents        Int        @default(0)
-  highEvents          Int        @default(0)
-  criticalEvents      Int        @default(0)
-
-  calculatedAt        DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
-
-  attempt             ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 }
