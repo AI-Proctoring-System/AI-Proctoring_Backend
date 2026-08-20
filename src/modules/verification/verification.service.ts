@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SubmitRoomVerificationDto } from './dto/submit-room-verification.dto';
+import { SubmitIdentityVerificationDto } from './dto/submit-identity-verification.dto';
 
 @Injectable()
 export class VerificationService {
@@ -70,6 +71,38 @@ export class VerificationService {
         fullRoomScanPassed: dto.fullRoomScanPassed,
         deskScanPassed: dto.deskScanPassed,
         prohibitedItemsDetected: dto.prohibitedItemsDetected,
+        verifiedAt: dto.status === 'VERIFIED' ? new Date() : null,
+      },
+    });
+  }
+
+  async submitIdentityVerification(candidateId: string, attemptId: string, dto: SubmitIdentityVerificationDto) {
+    const attempt = await this.prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+    });
+
+    if (!attempt || attempt.candidateId !== candidateId) {
+      throw new ForbiddenException('Attempt not found or access denied');
+    }
+
+    return this.prisma.identityVerification.upsert({
+      where: { attemptId },
+      update: {
+        status: dto.status,
+        similarityScore: dto.similarityScore,
+        faceMatchConfidence: dto.faceMatchConfidence,
+        livenessPassed: dto.livenessPassed,
+        verificationAttempts: { increment: 1 },
+        verifiedAt: dto.status === 'VERIFIED' ? new Date() : null,
+      },
+      create: {
+        candidateId,
+        attemptId,
+        status: dto.status,
+        similarityScore: dto.similarityScore,
+        faceMatchConfidence: dto.faceMatchConfidence,
+        livenessPassed: dto.livenessPassed,
+        verificationAttempts: 1,
         verifiedAt: dto.status === 'VERIFIED' ? new Date() : null,
       },
     });

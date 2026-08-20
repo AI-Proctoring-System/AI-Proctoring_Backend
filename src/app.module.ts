@@ -11,6 +11,7 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
 import { AttemptsModule } from './modules/attempts/attempts.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { TelemetryModule } from './modules/telemetry/telemetry.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TelemetryModule } from './modules/telemetry/telemetry.module';
     AttemptsModule,
     VerificationModule,
     TelemetryModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],
