@@ -16,6 +16,15 @@ import { UserRole } from '@prisma/client';
 export class AttemptsController {
   constructor(private readonly attemptsService: AttemptsService) {}
 
+  @Get('invitation/:invitationId')
+  @ApiOperation({ summary: 'Get invitation and basic assessment details' })
+  getInvitationDetails(
+    @CurrentUser() user: any,
+    @Param('invitationId') invitationId: string,
+  ) {
+    return this.attemptsService.getInvitationDetails(user.candidateId, invitationId);
+  }
+
   @Get('scheduled')
   @ApiOperation({ summary: 'List all scheduled assessments for the candidate' })
   getScheduledAttempts(@CurrentUser() user: any) {

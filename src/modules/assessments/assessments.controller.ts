@@ -31,6 +31,24 @@ export class AssessmentsController {
     return this.assessmentsService.findAll(user.sub);
   }
 
+  @Get('stats/overview')
+  @ApiOperation({ summary: 'Get overall statistics for the company dashboard' })
+  getStats(@CurrentUser() user: any) {
+    return this.assessmentsService.getDashboardStats(user.sub);
+  }
+
+  @Get('candidates/all')
+  @ApiOperation({ summary: 'Get all unique candidates invited by the company' })
+  getCandidates(@CurrentUser() user: any) {
+    return this.assessmentsService.getCompanyCandidates(user.sub);
+  }
+
+  @Get('logs/all')
+  @ApiOperation({ summary: 'Get all telemetry logs for the company assessments' })
+  getLogs(@CurrentUser() user: any) {
+    return this.assessmentsService.getCompanyLogs(user.sub);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get details of a specific assessment' })
   findOne(@CurrentUser() user: any, @Param('id') id: string) {
@@ -71,5 +89,24 @@ export class AssessmentsController {
   @ApiOperation({ summary: 'Delete an assessment' })
   remove(@CurrentUser() user: any, @Param('id') id: string) {
     return this.assessmentsService.remove(user.sub, id);
+  }
+
+  @Patch('candidates/:id')
+  @ApiOperation({ summary: 'Update candidate profile information' })
+  updateCandidate(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: { firstName?: string; lastName?: string; phone?: string },
+  ) {
+    return this.assessmentsService.updateCandidate(user.sub, id, dto);
+  }
+
+  @Delete('candidates/:id')
+  @ApiOperation({ summary: 'Delete candidate user account' })
+  removeCandidate(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ) {
+    return this.assessmentsService.removeCandidate(user.sub, id);
   }
 }

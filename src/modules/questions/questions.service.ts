@@ -183,4 +183,32 @@ export class QuestionsService {
       where: { id: questionId },
     });
   }
+
+  async clearAll(userId: string, assessmentId: string) {
+    const assessment = await this.prisma.assessment.findUnique({
+      where: { id: assessmentId },
+      include: { company: true },
+    });
+
+    if (!assessment) {
+      throw new NotFoundException('Assessment not found');
+    }
+
+    if (assessment.company.userId !== userId) {
+      throw new ForbiddenException('You do not have access to modify this assessment');
+    }
+
+    // Delete all answer options related to the assessment questions
+    await this.prisma.answerOption.deleteMany({
+      where: {
+        question: {
+          assessmentId,
+        },
+      },
+    });
+
+    return this.prisma.question.deleteMany({
+      where: { assessmentId },
+    });
+  }
 }
