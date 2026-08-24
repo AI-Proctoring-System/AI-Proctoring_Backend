@@ -43,14 +43,12 @@ export class InvitationsService {
         include: { candidate: true },
       });
 
-      let rawPassword = '';
+      const rawPassword = randomBytes(8).toString('hex');
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(rawPassword, salt);
 
       if (!user) {
         // Create new candidate user
-        rawPassword = randomBytes(8).toString('hex');
-        const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(rawPassword, salt);
-
         user = await this.prisma.user.create({
           data: {
             email: candidateData.email,
@@ -66,6 +64,17 @@ export class InvitationsService {
           },
           include: { candidate: true },
         });
+      } else {
+        // Existing user, update their password so we can send it in the email
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            passwordHash,
+            firstName: candidateData.firstName || user.firstName,
+            lastName: candidateData.lastName || user.lastName,
+          },
+          include: { candidate: true },
+        });
       }
 
       if (!user.candidate) {
@@ -74,8 +83,6 @@ export class InvitationsService {
           data: {
             userId: user.id,
             phone: candidateData.phone,
-            // Assuming existing users without candidate profiles don't need avatars instantly
-            // They can upload it themselves, but for consistency we could do it here too
           },
         });
         user = await this.prisma.user.findUniqueOrThrow({
@@ -113,11 +120,11 @@ export class InvitationsService {
         assessment.title,
         assessment.company.name,
         rawPassword,
-        `http://localhost:3000/login?token=${invitationToken}` // Placeholder URL for frontend
+        `http://localhost:3000/candidate/login?email=${encodeURIComponent(user.email)}`
       );
 
       // Log for easy testing locally
-      this.logger.log(`Invited ${user.email} | PW: ${rawPassword || '(existing user)'}`);
+      this.logger.log(`Invited ${user.email} | PW: ${rawPassword}`);
       
       results.push(invitation);
     }
@@ -168,10 +175,6 @@ export class InvitationsService {
   }
 
   private async sendInviteEmail(to: string, name: string, assessmentTitle: string, companyName: string, password?: string, link?: string) {
-    const loginSnippet = password
-      ? `<p>Your temporary password is: <strong>${password}</strong></p>`
-      : `<p>Please use your existing password to log in.</p>`;
-
     const mailOptions = {
       from: process.env.SMTP_FROM || 'no-reply@example.com',
       to,
@@ -179,8 +182,12 @@ export class InvitationsService {
       html: `
         <h3>Hello ${name},</h3>
         <p>You have been invited by ${companyName} to take the <strong>${assessmentTitle}</strong> assessment.</p>
-        ${loginSnippet}
-        <p><a href="${link}">Click here to access your portal</a></p>
+        <p>Please use the following credentials to access the candidate portal:</p>
+        <ul>
+          <li><strong>Email:</strong> ${to}</li>
+          <li><strong>Password:</strong> ${password}</li>
+        </ul>
+        <p><a href="${link}">Click here to access your candidate portal</a></p>
         <p>Best regards,<br/>The Proctoring Team</p>
       `,
     };

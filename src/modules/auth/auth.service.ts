@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -78,6 +78,11 @@ export class AuthService {
     };
   }
 
+  async checkEmailExists(email: string): Promise<boolean> {
+    const user = await this.usersService.findByEmail(email);
+    return !!user;
+  }
+
   async updateCompanyProfile(userId: string, dto: UpdateCompanyProfileDto) {
     // 1. Prepare updates for the User model
     const userUpdates: any = {};
@@ -117,5 +122,19 @@ export class AuthService {
         company: updatedUser.company,
       }
     };
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        company: true,
+        candidate: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 }

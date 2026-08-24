@@ -21,6 +21,7 @@ export class AttemptsService {
             startTime: true,
             endTime: true,
             durationMinutes: true,
+            passingScore: true,
             status: true,
             company: { select: { name: true } },
           },
@@ -83,6 +84,36 @@ export class AttemptsService {
     });
 
     return { attempt, questions };
+  }
+
+  async getInvitationDetails(candidateId: string, invitationId: string) {
+    const invitation = await this.prisma.assessmentInvitation.findUnique({
+      where: { id: invitationId },
+      include: {
+        assessment: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            assessmentType: true,
+            instructions: true,
+            durationMinutes: true,
+            passingScore: true,
+            allowedMaterials: true,
+            prohibitedMaterials: true,
+            examDate: true,
+            startTime: true,
+            endTime: true,
+          },
+        },
+      },
+    });
+
+    if (!invitation || invitation.candidateId !== candidateId) {
+      throw new ForbiddenException('Invitation not found or access denied');
+    }
+
+    return invitation;
   }
 
   async saveAnswers(candidateId: string, attemptId: string, dto: SaveAnswersDto) {

@@ -77,4 +77,13 @@ export class QuestionsController {
   ) {
     return this.questionsService.remove(user.sub, assessmentId, id);
   }
+
+  @Delete()
+  @ApiOperation({ summary: 'Delete all questions for an assessment' })
+  clearAll(
+    @CurrentUser() user: any,
+    @Param('assessmentId') assessmentId: string,
+  ) {
+    return this.questionsService.clearAll(user.sub, assessmentId);
+  }
 }

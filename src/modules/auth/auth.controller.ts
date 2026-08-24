@@ -1,4 +1,4 @@
-import { Controller, Post, Patch, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Post, Patch, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -14,6 +14,14 @@ import { UserRole } from '@prisma/client';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('check-email')
+  @ApiOperation({ summary: 'Check if email is already registered' })
+  @ApiResponse({ status: 200, description: 'Availability status' })
+  async checkEmail(@Query('email') email: string) {
+    const exists = await this.authService.checkEmailExists(email);
+    return { exists };
+  }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new company/recruiter' })
@@ -40,6 +48,15 @@ export class AuthController {
     return {
       message: 'Logged out successfully. Please remove the JWT token from your client storage.',
     };
+  }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Profile details' })
+  async getProfile(@CurrentUser() user: any) {
+    return this.authService.getProfile(user.sub);
   }
 
   @Patch('profile')
