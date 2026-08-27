@@ -224,7 +224,10 @@ export class AssessmentsService {
           email: inv.candidate.user.email,
           phone: inv.candidate.phone || undefined,
           status: inv.status === 'INVITED' ? 'INVITED' : 'PENDING',
+          invitedAssessmentIds: [inv.assessmentId],
         });
+      } else {
+        candidateMap.get(candId).invitedAssessmentIds.push(inv.assessmentId);
       }
     }
 
@@ -257,6 +260,7 @@ export class AssessmentsService {
           email: att.candidate.user.email,
           phone: att.candidate.phone || undefined,
           status: (att.status === 'SUBMITTED' || att.status === 'AUTO_SUBMITTED') ? 'COMPLETED' : 'INVITED',
+          invitedAssessmentIds: [att.assessmentId],
         });
       }
     }
