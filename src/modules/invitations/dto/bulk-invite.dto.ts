@@ -21,7 +21,7 @@ export class CandidateCsvItemDto {
   @ApiProperty({ example: '+1234567890', required: false })
   @IsOptional()
   @IsString()
-  @Matches(/^\+?[1-9]\d{1,14}$/, { message: 'Phone number must be a valid E.164 format (e.g. +1234567890)' })
+  @Matches(/^\+?\d{7,15}$/, { message: 'Phone number must be valid (e.g. +923001234567 or 03001234567)' })
   phone?: string;
 }
 
