@@ -12,6 +12,7 @@ import { AttemptsModule } from './modules/attempts/attempts.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { TelemetryModule } from './modules/telemetry/telemetry.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { UploadModule } from './modules/upload/upload.module';
     VerificationModule,
     TelemetryModule,
     UploadModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

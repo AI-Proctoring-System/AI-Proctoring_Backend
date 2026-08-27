@@ -3,9 +3,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SaveAnswersDto } from './dto/save-answers.dto';
 import { AttemptStatus, AnswerStatus } from '@prisma/client';
 
+import { NotificationType } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
+
 @Injectable()
 export class AttemptsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async getScheduledAttempts(candidateId: string) {
     return this.prisma.assessmentInvitation.findMany({
@@ -172,12 +178,36 @@ export class AttemptsService {
 
     // Score calculation could go here depending on requirements.
     // For now, mark as submitted.
-    return this.prisma.examAttempt.update({
+    const updatedAttempt = await this.prisma.examAttempt.update({
       where: { id: attemptId },
       data: {
         status: AttemptStatus.SUBMITTED,
         submittedAt: new Date(),
       },
+      include: {
+        candidate: { include: { user: true } },
+        assessment: { include: { company: true } },
+      },
     });
+
+    // Notify Candidate
+    await this.notificationsService.createNotification(
+      updatedAttempt.candidate.userId,
+      'Test Submitted',
+      `You have successfully submitted ${updatedAttempt.assessment.title}.`,
+      NotificationType.SUCCESS,
+      `submission_${updatedAttempt.id}`,
+    );
+
+    // Notify Company Admin
+    await this.notificationsService.createNotification(
+      updatedAttempt.assessment.company.userId,
+      'Candidate Test Submission',
+      `${updatedAttempt.candidate.user.firstName} ${updatedAttempt.candidate.user.lastName} submitted ${updatedAttempt.assessment.title}.`,
+      NotificationType.INFO,
+      `company_sub_${updatedAttempt.id}`,
+    );
+
+    return updatedAttempt;
   }
 }
