@@ -4,11 +4,15 @@ import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateRulesDto } from './dto/update-rules.dto';
 import { ScheduleAssessmentDto } from './dto/schedule-assessment.dto';
 import { UpdateAssessmentDto } from './dto/update-assessment.dto';
-import { Assessment, UserRole } from '@prisma/client';
+import { Assessment, UserRole, NotificationType } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AssessmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async create(userId: string, dto: CreateAssessmentDto): Promise<Assessment> {
     const company = await this.prisma.company.findUnique({
@@ -105,11 +109,21 @@ export class AssessmentsService {
   }
 
   async remove(userId: string, assessmentId: string): Promise<Assessment> {
-    await this.findOne(userId, assessmentId); // Validates existence and ownership
+    const assessment = await this.findOne(userId, assessmentId); // Validates existence and ownership
 
-    return this.prisma.assessment.delete({
+    const deleted = await this.prisma.assessment.delete({
       where: { id: assessmentId },
     });
+
+    await this.notificationsService.createNotification(
+      userId,
+      'Assessment Deleted',
+      `Assessment "${assessment.title}" was deleted.`,
+      NotificationType.WARNING,
+      `company_assessment_delete_${assessmentId}_${Date.now()}`,
+    );
+
+    return deleted;
   }
 
   async getDashboardStats(userId: string) {
